@@ -12,13 +12,16 @@ Likewise, any referenced application definitions are not listed.
 
 First save your firewall config on Junos:
 
+```
 show configuration | display set | save my-set-config.txt
+```
 
 Then copy the textfile on your computer and use this utility.
 
 
 Example:
 
+```
 ./policyfinder fw.set.conf 10.42.42.0/24
 
 set security address-book global address NET_Admin 10.42.42.0/24
@@ -37,5 +40,6 @@ set security policies from-zone OFFICE to-zone CUS7 policy asdf match source-add
 set security policies from-zone OFFICE to-zone CUS7 policy asdf match destination-address any-ipv4
 set security policies from-zone OFFICE to-zone CUS7 policy asdf match application any-tcp10m-udp-icmp
 set security policies from-zone OFFICE to-zone CUS7 policy asdf then permit
+```
 
-So there.
+So there. Cheers!
