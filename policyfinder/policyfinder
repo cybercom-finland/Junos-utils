@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: iso-8859-15 -*-
 
-import os, re, sys, time
-import cgi, cgitb
+import os, re, sys
 from IPy import *
-from pprint import *
 
 ###############
 # Configuration
@@ -40,9 +38,6 @@ def main():
     except:
         return usage()
 
-    #print repr(cfg_file)
-    #print repr(prefix_list)
-
     cfg = []
     linenum = 0
     for line in open(cfg_file, "rb"):
@@ -76,17 +71,17 @@ def main():
             addrsets[key].append(m.group(2))
             continue
 
-    #print repr(addrs)
-    #print repr(addrsets)
 
     # Find all matching addresses
     m_addrs = {}
     for a in addrs.keys():
         m = [x for x in prefix_list if addrs[a] in x]
         if m: m_addrs[a] = addrs[a]
-    #print "Matching addresses:"
-    #dump_hash(m_addrs)
-    #print
+
+    if DEBUG:
+        print "Matching addresses:"
+        dump_hash(m_addrs)
+        print
 
     for k in sorted(m_addrs.keys()):
         print(cfg_addrs[k])
@@ -102,9 +97,11 @@ def main():
                 match = True
                 break
         if match: m_addrsets[g] = addrsets[g]
-    #print "Matching addrsets:"
-    #dump_hash(m_addrsets)
-    #print
+
+    if DEBUG:
+        print "Matching addrsets:"
+        dump_hash(m_addrsets)
+        print
 
     for k in sorted(m_addrsets.keys()):
         print "\n".join(cfg_addrsets[k])
@@ -122,9 +119,10 @@ def main():
             if not key in policies: policies[key] = []
             policies[key].append(m.group(4))
 
-    #print "Policies:"
-    #dump_hash(policies)
-    #print
+    if DEBUG:
+        print "Policies:"
+        dump_hash(policies)
+        print
 
     # Find all matching policies
     m_policies = {}
@@ -136,9 +134,11 @@ def main():
                 if m.group(2) in m_addrsets: match = True
                 if m.group(2) in m_addrs: match = True
         if match: m_policies[p] = policies[p]
-    #print "Matching policies:"
-    #dump_hash(m_policies)
-    #print
+
+    if DEBUG:
+        print "Matching policies:"
+        dump_hash(m_policies)
+        print
 
     # Print out matching policies
     for k in sorted(m_policies.keys()):

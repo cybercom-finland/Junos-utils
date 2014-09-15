@@ -19,8 +19,18 @@ show configuration | display set | save my-set-config.txt
 Then copy the textfile on your computer and use this utility.
 
 
-Example:
+Dependencies
+------------
 
+The script is written in Python. You will need the IPy module,
+which can be installed like this on an Ubuntu system:
+
+sudo apt-get install python-ipy
+
+
+
+Example
+=======
 ```
 ./policyfinder fw.set.conf 10.42.42.0/24
 
