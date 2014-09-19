@@ -85,7 +85,7 @@ def main():
 
     for k in sorted(m_addrs.keys()):
         print(cfg_addrs[k])
-
+    print
 
     # Find all matching address-addrsets
     m_addrsets = {}
@@ -105,6 +105,7 @@ def main():
 
     for k in sorted(m_addrsets.keys()):
         print "\n".join(cfg_addrsets[k])
+    print
 
     # Parse all security policies
     cfg_policies = {}
@@ -143,6 +144,7 @@ def main():
     # Print out matching policies
     for k in sorted(m_policies.keys()):
         print "\n".join(cfg_policies[k])
+        print
 
     return 0
 
