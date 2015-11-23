@@ -4,6 +4,9 @@
 import os, re, sys
 from IPy import *
 
+IGNORED=['group-to-ignore']
+ZONES=["ZONE"]
+
 ###############
 # Configuration
 
@@ -25,7 +28,27 @@ def usage():
                      " save foo.set.conf\n")
     return 1
 
+def print_group_applies(conf_groups, direction, group):
+    for zone, groups in conf_groups.items():
+        if group in groups[direction]: print zone,
 
+def find_groups(zones, config):
+    groups = {}
+    for zone in zones:
+        groups[zone] = {"to-zone": set(), "from-zone": set()}
+    for line in config:
+        m = re.search("set security policies from-zone (.*) to-zone (.*) apply-groups (.*)", line)
+        if not m: continue
+        f, t, g = m.group(1), m.group(2), m.group(3)
+        if g in IGNORED: continue
+        if f in zones:
+            # we go from this zone to the zone added
+            groups[f]["to-zone"].add((g))
+        if t in zones:
+            # and similarly, *to* this zone from the zone added
+            groups[t]["from-zone"].add((g))
+    
+    return groups
 
 def main():
     try:
@@ -46,9 +69,15 @@ def main():
         cfg.append(line)
 
     # Make address book
+    config_groups = find_groups(ZONES, cfg)
+    relevant_groups = set()
+    for zone, g in config_groups.items():
+        relevant_groups.update(g['from-zone'])
+        relevant_groups.update(g['to-zone'])
     cfg_addrs = {}
+    cfg_addrs = {"any": IP("0.0.0.0/0"), "any-ipv4": IP("0.0.0.0/0")}
     cfg_addrsets = {}
-    addrs = {}
+    addrs = {"any": IP("0.0.0.0/0"), "any-ipv4": IP("0.0.0.0/0")}
     addrsets = {}
     for line in cfg:
         # is it address?
@@ -73,7 +102,7 @@ def main():
 
 
     # Find all matching addresses
-    m_addrs = {}
+    m_addrs = {"any": IP("0.0.0.0/0"), "any-ipv4": IP("0.0.0.0/0")}
     for a in addrs.keys():
         m = [x for x in prefix_list if addrs[a] in x]
         if m: m_addrs[a] = addrs[a]
@@ -111,14 +140,23 @@ def main():
     cfg_policies = {}
     policies = {}
     for line in cfg:
-        m = re.search("\s+security\s+policies\s+from-zone\s+(\S+)"
+        key = None
+        # Horrible hack
+        idx=0
+        m = re.search("\s+groups (\S+) security\s+policies\s+from-zone\s+(\S+)"
                      "\s+to-zone\s+(\S+)\s+policy\s+(\S+)\s+(.*)$", line)
         if m:
-            key = (m.group(1), m.group(2), m.group(3))
+            key = (m.group(1), m.group(2), m.group(3), m.group(4))
+            idx = 1
+        else:
+            m = re.search("\s+security\s+policies\s+from-zone\s+(\S+)"
+                     "\s+to-zone\s+(\S+)\s+policy\s+(\S+)\s+(.*)$", line)
+            if m: key = (None, m.group(1), m.group(2), m.group(3))
+        if m:
             if not key in cfg_policies: cfg_policies[key] = []
             cfg_policies[key].append(line)
             if not key in policies: policies[key] = []
-            policies[key].append(m.group(4))
+            policies[key].append(m.group(4+idx))
 
     if DEBUG:
         print "Policies:"
@@ -129,6 +167,11 @@ def main():
     m_policies = {}
     for p in policies.keys():
         match = False
+        # "no group" -> always relevant
+        if p[0] is not None and p[0] not in relevant_groups:
+            continue
+        if not p[0] and (p[1] not in ZONES and p[2] not in ZONES):
+            continue
         for line in policies[p]:
             m = re.match("^match\s+(\w+)-address\s+(\S+)", line)
             if m:
@@ -143,6 +186,11 @@ def main():
 
     # Print out matching policies
     for k in sorted(m_policies.keys()):
+        print "# Applies to zones:",
+        print_group_applies(config_groups, 'from-zone', k[0])
+        print " from zones",
+        print_group_applies(config_groups, 'to-zone', k[0])
+        print
         print "\n".join(cfg_policies[k])
         print
 
